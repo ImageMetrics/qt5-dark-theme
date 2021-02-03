@@ -46,8 +46,6 @@ add_library(Kvantum SHARED
     src/pbscolorconfig.cpp
     src/pbscolorscheme.cpp
     src/pbscolorscheme.h
-    src/pbsskin.cpp
-    src/pbsskin.h
     src/shortcuthandler.cpp
     src/shortcuthandler.h
     src/specs.h

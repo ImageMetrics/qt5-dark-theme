@@ -62,6 +62,10 @@
 //#include <QDialogButtonBox> // for dialog buttons layout
 #include <QSurfaceFormat>
 #include <QWindow>
+
+#include "pbscolorconfig.h"
+#include "pbscolorscheme.h"
+
 #if QT_VERSION >= 0x050500 && (defined Q_WS_X11 || defined Q_OS_LINUX)
 #include <QtPlatformHeaders/QXcbWindowFunctions>
 #endif
@@ -261,172 +265,129 @@ static inline QString getName(const QColor col)
   return colName;
 }
 
-Style::Style(bool useDark) : QCommonStyle()
+Style::Style() : QCommonStyle()
 {
   progressTimer_ = new QTimer(this);
-  opacityTimer_ = opacityTimerOut_ = nullptr;
-  animationOpacity_ = animationOpacityOut_ = 100;
-  animationStartState_ = animationStartStateOut_ = "normal";
-  animatedWidget_ = animatedWidgetOut_ = nullptr;
-
-  settings_ = defaultSettings_ = themeSettings_ = nullptr;
-  defaultRndr_ = themeRndr_ = nullptr;
-
-  gtkDesktop_ = false;
-  noComposite_ = false;
-
-  QString homeDir = QDir::homePath();
-
-  /* this is just for protection against a bad sudo */
-  char * _xdg_config_home = getenv("XDG_CONFIG_HOME");
-  if (!_xdg_config_home)
-    xdg_config_home = QString("%1/.config").arg(homeDir);
-  else
-    xdg_config_home = QString(_xdg_config_home);
-
-  QString theme;
-  QString themeChooserFile = QString("%1/Kvantum/kvantum.kvconfig").arg(xdg_config_home);
-  if (!QFile::exists(themeChooserFile))
-  { // go to a global config file
-    themeChooserFile = QString();
-    QStringList confList = QStandardPaths::standardLocations(QStandardPaths::ConfigLocation);
-    confList.removeOne(xdg_config_home);
-    for (const QString &thisConf : static_cast<const QStringList&>(confList))
-    {
-      QString thisFile = QString("%1/Kvantum/kvantum.kvconfig").arg(thisConf);
-      if (QFile::exists(thisFile))
-      {
-        themeChooserFile = thisFile;
-        break;
-      }
-    }
-  }
-  if (!themeChooserFile.isEmpty())
-  {
-    QSettings themeChooser (themeChooserFile,QSettings::NativeFormat);
-    if (themeChooser.status() == QSettings::NoError)
-    {
-      if (themeChooser.contains("theme"))
-        theme = themeChooser.value("theme").toString();
-      /* check if this app has a specific theme assigned to it */
-      QString appName = qApp->applicationName();
-      themeChooser.beginGroup ("Applications");
-      QStringList list = themeChooser.childKeys();
-      for (int i = 0; i < list.count(); ++i)
-      {
-        if (themeChooser.value (list.at(i)).toStringList().contains(appName, Qt::CaseInsensitive))
-        {
-          theme = list.at(i);
-          break;
-        }
-      }
-      themeChooser.endGroup();
-    }
-  }
+  connect(progressTimer_, &QTimer::timeout, this, &Style::advanceProgressbar);
 
   setBuiltinDefaultTheme();
-  setTheme(theme, useDark);
+}
 
+Style::~Style()
+{
+#if QT_VERSION >= 0x050500
+  QHash<const QObject*, Animation*>::iterator i = animations_.begin();
+  while (i != animations_.end())
+  {
+    QHash<const QObject*, Animation*>::iterator prev = i;
+    ++i;
+    Animation *animation = animations_.take(prev.key());
+    if (animation)
+    { // deleting should be done after stopping
+      animation->stop();
+      delete animation;
+      animation = nullptr;
+    }
+  }
+#endif
+
+  /* all the following timers have "this" as their parent
+     but are explicitly deleted here only to be listed */
+  if (progressTimer_)
+  {
+    progressTimer_->stop();
+    delete progressTimer_;
+    progressTimer_ = nullptr;
+  }
+  if (opacityTimer_)
+  {
+    opacityTimer_->stop();
+    delete opacityTimer_;
+    opacityTimer_ = nullptr;
+  }
+  if (opacityTimerOut_)
+  {
+    opacityTimerOut_->stop();
+    delete opacityTimerOut_;
+    opacityTimerOut_ = nullptr;
+  }
+}
+
+void Style::setBuiltinDefaultTheme()
+{
+  defaultSettings_.reset(new ThemeConfig(":/Kvantum/default.kvconfig"));
+  defaultRndr_.reset(new QSvgRenderer());
+  defaultRndr_->load(QString(":/Kvantum/default.svg"));
+  settings_ = defaultSettings_.get();
   tspec_ = settings_->getThemeSpec();
   hspec_ = settings_->getHacksSpec();
   cspec_ = settings_->getColorSpec();
 
-#if QT_VERSION >= 0x050600
-  QSet<QByteArray> desktop = qgetenv("XDG_CURRENT_DESKTOP").toLower().split(':').toSet();
-  QSet<QByteArray> gtkDesktops = QSet<QByteArray>() << "gnome" << "unity" << "pantheon";
-  gtkDesktop_ = gtkDesktops.intersects(desktop);
-#else
-  QByteArray desktop = qgetenv("XDG_CURRENT_DESKTOP").toLower();
-  QSet<QByteArray> gtkDesktops = QSet<QByteArray>() << "gnome" << "unity" << "pantheon";
-  gtkDesktop_ = gtkDesktops.contains(desktop);
+  probeTheme();
+}
+
+QPalette Style::standardPalette() const
+{
+  if (colorConfig_)
+    return PBSColorScheme::createApplicationPalette(*colorConfig_);
+  return QPalette();
+}
+
+bool Style::setTheme(const QString& kv, const QString& svg, const QString& color_config)
+{
+  std::unique_ptr<ThemeConfig> config;
+  std::unique_ptr<QSvgRenderer> renderer;
+  std::unique_ptr<PBSColorConfig> colors;
+
+#if 0
+  std::cout << kv.toStdString() << std::endl;
+  std::cout << svg.toStdString() << std::endl;
+  std::cout << color_config.toStdString() << std::endl;
 #endif
 
-  if (tspec_.respect_DE)
-  {
-    if (gtkDesktop_)
-    {
-      hspec_.iconless_pushbutton = true;
-      hspec_.iconless_menu = true;
-      //tspec_.x11drag = WindowManager::DRAG_MENUBAR_AND_PRIMARY_TOOLBAR;
-#if QT_VERSION >= 0x050600
-      if (desktop.contains("unity"))
-#else
-      if (QByteArray("unity") == desktop)
-#endif
-      {
-        // Link 'respect_DE' and composite settings only for Unity. Issue #128
-        noComposite_ = true;
-        // without compositing, these keys should be corrected
-        tspec_.translucent_windows = false;
-        tspec_.blurring = false;
-      }
-    }
-#if QT_VERSION >= 0x050600
-    else if (desktop.contains("kde"))
-#else
-    else if (desktop == QByteArray("kde"))
-#endif
-    {
-      QString kdeGlobals = QString("%1/kdeglobals").arg(xdg_config_home);
-      if (!QFile::exists(kdeGlobals))
-        kdeGlobals = QString("%1/.kde/share/config/kdeglobals").arg(homeDir);
-      if (!QFile::exists(kdeGlobals))
-        kdeGlobals = QString("%1/.kde4/share/config/kdeglobals").arg(homeDir);
-      if (QFile::exists(kdeGlobals))
-      {
-        QSettings KDESettings(kdeGlobals, QSettings::NativeFormat);
-        QVariant v;
-        int iconSize;
-        KDESettings.beginGroup("KDE");
-        v = KDESettings.value ("SingleClick");
-        KDESettings.endGroup();
-        if (v.isValid())
-          tspec_.double_click = !v.toBool();
-        else
-          tspec_.double_click = false;
-        KDESettings.beginGroup("DialogIcons");
-        v = KDESettings.value ("Size");
-        KDESettings.endGroup();
-        if (v.isValid())
-        {
-          iconSize = v.toInt();
-          if (iconSize > 0 && iconSize <= 256)
-            tspec_.large_icon_size = iconSize;
-        }
-        else
-          tspec_.large_icon_size = 32;
-        KDESettings.beginGroup("SmallIcons");
-        v = KDESettings.value ("Size");
-        KDESettings.endGroup();
-        if (v.isValid())
-        {
-          iconSize = v.toInt();
-          if (iconSize > 0 && iconSize <= 256)
-            tspec_.small_icon_size = iconSize;
-        }
-        else
-          tspec_.small_icon_size = 16;
-      }
-    }
+  if (!kv.isEmpty()) {
+    config.reset(new ThemeConfig);
+    if (!config->load(kv))
+      return false;
+    config->setParent(defaultSettings_.get());
   }
 
-  isPlasma_ = false;
-  isLibreoffice_ = false;
-  isDolphin_ = false;
-  isPcmanfm_ = false;
-  subApp_ = false;
-  isOpaque_ = false;
-  isKisSlider_ = false;
-  extraComboWidth_ = 0;
-  pixelRatio_ = 1;
+  if (!svg.isEmpty()) {
+    renderer.reset(new QSvgRenderer());
+    renderer->load(svg);
+    if (!renderer->isValid())
+      return false;
+  }
 
-#if QT_VERSION >= 0x050500
-  int dpr = qApp->devicePixelRatio();
-  if (dpr > 1)
-    pixelRatio_ = dpr;
-#endif
+  if (!color_config.isEmpty()) {
+    colors.reset(new PBSColorConfig());
+    if (!colors->load(color_config))
+      return false;
+  }
 
-  connect(progressTimer_, &QTimer::timeout, this, &Style::advanceProgressbar);
+  themeRndr_ = std::move(renderer);
+  themeSettings_ = std::move(config);
+  colorConfig_ = std::move(colors);
+  settings_ = themeSettings_.get();
+  tspec_ = settings_->getThemeSpec();
+  hspec_ = settings_->getHacksSpec();
+  cspec_ = settings_->getColorSpec();
+
+  probeTheme();
+  return true;
+}
+
+void Style::probeTheme()
+{
+  // clean up this deletion mess
+  delete opacityTimer_;
+  delete opacityTimerOut_;
+  delete itsShortcutHandler_;
+  delete blurHelper_;
+  opacityTimer_    = nullptr;
+  opacityTimerOut_ = nullptr;
+  itsShortcutHandler_ = nullptr;
+  blurHelper_ = nullptr;
 
   if (tspec_.animate_states)
   {
@@ -483,15 +444,8 @@ Style::Style(bool useDark) : QCommonStyle()
     }
   }
 
-  itsWindowManager_ = nullptr;
+
   blurHelper_ = nullptr;
-
-  if (tspec_.x11drag && tspec_.isX11)
-  {
-    itsWindowManager_ = new WindowManager(this, tspec_.x11drag/*, tspec_.isX11*/);
-    itsWindowManager_->initialize();
-  }
-
   if (tspec_.blurring)
   {
     getShadow("Menu", getMenuMargin(true), getMenuMargin(false));
@@ -503,427 +457,9 @@ Style::Style(bool useDark) : QCommonStyle()
   }
 }
 
-Style::~Style()
-{
-#if QT_VERSION >= 0x050500
-  QHash<const QObject*, Animation*>::iterator i = animations_.begin();
-  while (i != animations_.end())
-  {
-    QHash<const QObject*, Animation*>::iterator prev = i;
-    ++i;
-    Animation *animation = animations_.take(prev.key());
-    if (animation)
-    { // deleting should be done after stopping
-      animation->stop();
-      delete animation;
-      animation = nullptr;
-    }
-  }
-#endif
-
-  /* all the following timers have "this" as their parent
-     but are explicitly deleted here only to be listed */
-  if (progressTimer_)
-  {
-    progressTimer_->stop();
-    delete progressTimer_;
-    progressTimer_ = nullptr;
-  }
-  if (opacityTimer_)
-  {
-    opacityTimer_->stop();
-    delete opacityTimer_;
-    opacityTimer_ = nullptr;
-  }
-  if (opacityTimerOut_)
-  {
-    opacityTimerOut_->stop();
-    delete opacityTimerOut_;
-    opacityTimerOut_ = nullptr;
-  }
-
-  delete defaultSettings_;
-  delete themeSettings_;
-
-  delete defaultRndr_;
-  delete themeRndr_;
-}
-
-void Style::setBuiltinDefaultTheme()
-{
-  if (defaultSettings_)
-  {
-    delete defaultSettings_;
-    defaultSettings_ = nullptr;
-  }
-  if (defaultRndr_)
-  {
-    delete defaultRndr_;
-    defaultRndr_ = nullptr;
-  }
-
-  defaultSettings_ = new ThemeConfig(":/Kvantum/default.kvconfig");
-  defaultRndr_ = new QSvgRenderer();
-  defaultRndr_->load(QString(":/Kvantum/default.svg"));
-}
-
-static inline bool isThemeDir(const QString &path, const QString &themeName)
-{
-  if (themeName.isEmpty()) return false;
-  if (path.endsWith("/Kvantum"))
-  {
-    if (QFile::exists (path + QString("/%1/%1.kvconfig").arg(themeName))
-        || QFile::exists (path + QString("/%1/%1.svg").arg(themeName)))
-    {
-      return true;
-    }
-  }
-  else if (QFile::exists (path + QString("/%1/Kvantum/%1.kvconfig").arg(themeName))
-           || QFile::exists (path + QString("/%1/Kvantum/%1.svg").arg(themeName)))
-  {
-    return true;
-  }
-  return false;
-}
-
-void Style::setTheme(const QString &baseThemeName, bool useDark)
-{
-  if (themeSettings_)
-  {
-    delete themeSettings_;
-    themeSettings_ = nullptr;
-  }
-  if (themeRndr_)
-  {
-    delete themeRndr_;
-    themeRndr_ = nullptr;
-  }
-
-  if (!baseThemeName.isNull() && !baseThemeName.isEmpty()
-      /* "Default" is reserved by Kvantum Manager for copied default theme */
-      && baseThemeName != "Default"
-      /* "Kvantum" is reserved for the alternative installation paths */
-      && baseThemeName != "Kvantum"
-      /* no space in theme name */
-      && !(baseThemeName.simplified()).contains (" ")
-      /* "#" is reserved by Kvantum Manager as an ending for copied root themes */
-      && (!baseThemeName.contains("#")
-          || (baseThemeName.length() > 1
-              && baseThemeName.indexOf("#") == baseThemeName.size() - 1)))
-  {
-    QStringList themeMames;
-    if (useDark)
-    {
-      QString name = baseThemeName;
-      if (name.endsWith("#"))
-        name.chop(1);
-      /* give priority to modified themes */
-      themeMames.append(name + "Dark#");
-      themeMames.append(name + "Dark");
-    }
-    themeMames.append(baseThemeName);
-    for (const QString &themeName : static_cast<const QStringList&>(themeMames))
-    {
-      QString userConfig, userSvg, temp, lightName;
-
-      if (themeName.length() > 4 && themeName.endsWith("Dark"))
-      { // dark theme inside light theme folder
-        lightName = themeName.left(themeName.length() - 4);
-      }
-
-      temp = QString("%1/Kvantum/%2/%2.kvconfig")
-             .arg(xdg_config_home).arg(themeName);
-      if (QFile::exists(temp))
-        userConfig = temp;
-      temp = QString("%1/Kvantum/%2/%2.svg")
-             .arg(xdg_config_home).arg(themeName);
-      if (QFile::exists(temp))
-        userSvg = temp;
-
-      if (userConfig.isEmpty() && userSvg.isEmpty()
-          /* dark themes should be inside valid light directories */
-          && isThemeDir(QString("%1/Kvantum").arg(xdg_config_home), lightName))
-      {
-        temp = QString("%1/Kvantum/%2/%3.kvconfig")
-               .arg(xdg_config_home).arg(lightName).arg(themeName);
-        if (QFile::exists(temp))
-          userConfig = temp;
-        temp = QString("%1/Kvantum/%2/%3.svg")
-               .arg(xdg_config_home).arg(lightName).arg(themeName);
-        if (QFile::exists(temp))
-          userSvg = temp;
-      }
-
-      if (themeName.endsWith("#"))
-      {
-        if (themeName.length() > 5 && themeName.endsWith("Dark#"))
-        { // root dark theme inside root light theme folder
-          lightName = themeName.left(themeName.length() - 5);
-        }
-      }
-      /* search in the alternative theme installation paths
-         only if there's no such theme in the config folder */
-      else if (userConfig.isEmpty() && userSvg.isEmpty()) // copied themes don't come here
-      {
-        QString homeDir = QDir::homePath();
-        temp = QString("%1/.themes/%2/Kvantum/%2.kvconfig")
-               .arg(homeDir).arg(themeName);
-        if (QFile::exists(temp))
-          userConfig = temp;
-        temp = QString("%1/.themes/%2/Kvantum/%2.svg")
-               .arg(homeDir).arg(themeName);
-        if (QFile::exists(temp))
-          userSvg = temp;
-
-        if (userConfig.isEmpty() && userSvg.isEmpty()
-            && isThemeDir(QString("%1/.themes").arg(homeDir), lightName))
-        {
-          temp = QString("%1/.themes/%2/Kvantum/%3.kvconfig")
-                 .arg(homeDir).arg(lightName).arg(themeName);
-          if (QFile::exists(temp))
-            userConfig = temp;
-          temp = QString("%1/.themes/%2/Kvantum/%3.svg")
-                 .arg(homeDir).arg(lightName).arg(themeName);
-          if (QFile::exists(temp))
-            userSvg = temp;
-        }
-
-        if (userConfig.isEmpty() && userSvg.isEmpty())
-        {
-          temp = QString("%1/.local/share/themes/%2/Kvantum/%2.kvconfig")
-                 .arg(homeDir).arg(themeName);
-          if (QFile::exists(temp))
-            userConfig = temp;
-          temp = QString("%1/.local/share/themes/%2/Kvantum/%2.svg")
-                 .arg(homeDir).arg(themeName);
-          if (QFile::exists(temp))
-            userSvg = temp;
-
-          if (userConfig.isEmpty() && userSvg.isEmpty()
-              && isThemeDir(QString("%1/.local/share/themes").arg(homeDir), lightName))
-          {
-            temp = QString("%1/.local/share/themes/%2/Kvantum/%3.kvconfig")
-                   .arg(homeDir).arg(lightName).arg(themeName);
-            if (QFile::exists(temp))
-              userConfig = temp;
-            temp = QString("%1/.local/share/themes/%2/Kvantum/%3.svg")
-                   .arg(homeDir).arg(lightName).arg(themeName);
-            if (QFile::exists(temp))
-              userSvg = temp;
-          }
-        }
-
-        /* this can't be about a copied theme anymore */
-        if (!userConfig.isEmpty())
-          themeSettings_ = new ThemeConfig(userConfig);
-        if (!userSvg.isEmpty())
-        {
-          themeRndr_ = new QSvgRenderer();
-          themeRndr_->load(userSvg);
-        }
-        if (themeSettings_ || themeRndr_)
-        {
-          setupThemeDeps();
-          return;
-        }
-      }
-
-      /*******************
-       ** kvconfig file **
-       *******************/
-      if (!userConfig.isEmpty())
-      { // user theme
-        themeSettings_ = new ThemeConfig(userConfig);
-      }
-      else if (userSvg.isEmpty() // otherwise it's a user theme without config file
-               && !themeName.endsWith("#")) // root theme names can't have the ending "#"
-      { // root theme
-        temp = QString(DATADIR)
-               + QString("/Kvantum/%1/%1.kvconfig").arg(themeName);
-        if (QFile::exists(temp))
-          themeSettings_ = new ThemeConfig(temp);
-        else if (!isThemeDir(QString(DATADIR) + "/Kvantum", themeName) // svg shouldn't be found
-                 && isThemeDir(QString(DATADIR) + "/Kvantum", lightName))
-        {
-          temp = QString(DATADIR)
-                 + QString("/Kvantum/%1/%2.kvconfig").arg(lightName).arg(themeName);
-          if (QFile::exists(temp))
-            themeSettings_ = new ThemeConfig(temp);
-        }
-
-        if (!QFile::exists(temp))
-        {
-          temp = QString(DATADIR)
-                 + QString("/Kvantum/%1/%1.svg").arg(themeName);
-          if (!QFile::exists(temp)) // otherwise the checked root theme was just an SVG image
-          {
-            temp = QString(DATADIR)
-                   + QString("/themes/%1/Kvantum/%1.kvconfig").arg(themeName);
-            if (QFile::exists(temp))
-              themeSettings_ = new ThemeConfig(temp);
-          }
-
-          if (!QFile::exists(temp)
-              && !isThemeDir(QString(DATADIR) + "/themes", themeName)
-              && isThemeDir(QString(DATADIR) + "/themes", lightName))
-          {
-            temp = QString(DATADIR)
-                   + QString("/Kvantum/%1/%2.svg").arg(lightName).arg(themeName);
-            if (!QFile::exists(temp))
-            {
-              temp = QString(DATADIR)
-                     + QString("/themes/%1/Kvantum/%2.kvconfig").arg(lightName).arg(themeName);
-              if (QFile::exists(temp))
-                themeSettings_ = new ThemeConfig(temp);
-            }
-          }
-        }
-      }
-      /***************
-       ** SVG image **
-       ***************/
-      if (!userSvg.isEmpty())
-      { // user theme
-        themeRndr_ = new QSvgRenderer();
-        themeRndr_->load(userSvg);
-      }
-      else
-      {
-        if (!themeName.endsWith("#"))
-        {
-          if (userConfig.isEmpty()) // otherwise it's a user theme without SVG image
-          { // root theme
-            temp = QString(DATADIR)
-                   + QString("/Kvantum/%1/%1.svg").arg(themeName);
-            if (QFile::exists(temp))
-            {
-              themeRndr_ = new QSvgRenderer();
-              themeRndr_->load(temp);
-            }
-            else if (!isThemeDir(QString(DATADIR) + "/Kvantum", themeName) // config shouldn't be found
-                     && isThemeDir(QString(DATADIR) + "/Kvantum", lightName))
-            {
-              temp = QString(DATADIR)
-                     + QString("/Kvantum/%1/%2.svg").arg(lightName).arg(themeName);
-              if (QFile::exists(temp))
-              {
-                themeRndr_ = new QSvgRenderer();
-                themeRndr_->load(temp);
-              }
-            }
-
-            if (!QFile::exists(temp))
-            {
-              temp = QString(DATADIR)
-                     + QString("/Kvantum/%1/%1.kvconfig").arg(themeName);
-              if (!QFile::exists(temp)) // otherwise the checked root theme was just a config file
-              {
-                temp = QString(DATADIR)
-                       + QString("/themes/%1/Kvantum/%1.svg").arg(themeName);
-                if (QFile::exists(temp))
-                {
-                  themeRndr_ = new QSvgRenderer();
-                  themeRndr_->load(temp);
-                }
-              }
-
-              if (!QFile::exists(temp)
-                  && !isThemeDir(QString(DATADIR) + "/themes", themeName)
-                  && isThemeDir(QString(DATADIR) + "/themes", lightName))
-              {
-                temp = QString(DATADIR)
-                       + QString("/Kvantum/%1/%2.kvconfig").arg(lightName).arg(themeName);
-                if (!QFile::exists(temp))
-                {
-                  temp = QString(DATADIR)
-                         + QString("/themes/%1/Kvantum/%2.svg").arg(lightName).arg(themeName);
-                  if (QFile::exists(temp))
-                  {
-                    themeRndr_ = new QSvgRenderer();
-                    themeRndr_->load(temp);
-                  }
-                }
-              }
-            }
-          }
-        }
-        else if (!userConfig.isEmpty()) // otherwise, the folder has been emptied manually
-        { // find the SVG image of the root theme, of which this is a copy
-          QString _themeName = themeName.left(themeName.length() - 1);
-          if (!_themeName.isEmpty() && !_themeName.contains("#"))
-          {
-            temp = QString(DATADIR)
-                   + QString("/Kvantum/%1/%1.svg").arg(_themeName);
-            if (QFile::exists(temp))
-            {
-              themeRndr_ = new QSvgRenderer();
-              themeRndr_->load(temp);
-            }
-            else if (isThemeDir(QString(DATADIR) + "/Kvantum", lightName))
-            {
-              temp = QString(DATADIR)
-                     + QString("/Kvantum/%1/%2.svg").arg(lightName).arg(_themeName);
-              if (QFile::exists(temp))
-              {
-                themeRndr_ = new QSvgRenderer();
-                themeRndr_->load(temp);
-              }
-            }
-
-            if (!QFile::exists(temp))
-            {
-              temp = QString(DATADIR)
-                     + QString("/Kvantum/%1/%1.kvconfig").arg(_themeName);
-              if (!QFile::exists(temp)) // otherwise the checked root theme was just a config file
-              {
-                temp = QString(DATADIR)
-                       + QString("/themes/%1/Kvantum/%1.svg").arg(_themeName);
-                if (QFile::exists(temp))
-                {
-                  themeRndr_ = new QSvgRenderer();
-                  themeRndr_->load(temp);
-                }
-              }
-
-              if (!QFile::exists(temp)
-                  && !isThemeDir(QString(DATADIR) + "/themes", _themeName)
-                  && isThemeDir(QString(DATADIR) + "/themes", lightName))
-              {
-                temp = QString(DATADIR)
-                       + QString("/Kvantum/%1/%2.kvconfig").arg(lightName).arg(_themeName);
-                if (!QFile::exists(temp))
-                {
-                  temp = QString(DATADIR)
-                         + QString("/themes/%1/Kvantum/%2.svg").arg(lightName).arg(_themeName);
-                  if (QFile::exists(temp))
-                  {
-                    themeRndr_ = new QSvgRenderer();
-                    themeRndr_->load(temp);
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-      if (themeRndr_)
-        break;
-    }
-  }
-
-  setupThemeDeps();
-}
-
 void Style::setupThemeDeps()
 {
-  if (themeSettings_)
-  {
-    // always use the default config as fallback
-    themeSettings_->setParent(defaultSettings_);
-    settings_ = themeSettings_;
-  }
-  else
-    settings_ = defaultSettings_;
+
 }
 
 void Style::advanceProgressbar()
@@ -1011,7 +547,7 @@ QList<int> Style::getShadow(const QString &widgetName, int thicknessH, int thick
   {
       return menuShadow_;
   }
-  QSvgRenderer *renderer = 0;
+  QSvgRenderer *renderer = nullptr;
   qreal divisor = 0;
   QList<int> shadow;
   shadow << 0 << 0 << 0 << 0;
@@ -1023,8 +559,8 @@ QList<int> Style::getShadow(const QString &widgetName, int thicknessH, int thick
   for (int i = 0; i < 4; ++i)
   {
     if (themeRndr_ && themeRndr_->isValid() && themeRndr_->elementExists(element+"-shadow-"+direction[i]))
-      renderer = themeRndr_;
-    else renderer = defaultRndr_;
+      renderer = themeRndr_.get();
+    else renderer = defaultRndr_.get();
     if (renderer)
     {
       QRectF br = renderer->boundsOnElement(element+"-shadow-"+direction[i]);
@@ -1032,10 +568,10 @@ QList<int> Style::getShadow(const QString &widgetName, int thicknessH, int thick
       if (divisor)
       {
         if (themeRndr_ && themeRndr_->isValid() && themeRndr_->elementExists(element+"-shadow-hint-"+direction[i]))
-          renderer = themeRndr_;
+          renderer = themeRndr_.get();
         else if (defaultRndr_->elementExists(element+"-shadow-hint-"+direction[i]))
-          renderer = defaultRndr_;
-        else renderer = 0;
+          renderer = defaultRndr_.get();
+        else renderer = nullptr;
         if (renderer)
         {
           br = renderer->boundsOnElement(element+"-shadow-hint-"+direction[i]);
@@ -16424,7 +15960,7 @@ bool Style::renderElement(QPainter *painter,
   if (element.isEmpty() || !bounds.isValid() || painter->opacity() == 0)
     return false;
 
-  QSvgRenderer *renderer = 0;
+  QSvgRenderer *renderer = nullptr;
   QString _element(element);
 
   if (themeRndr_ && themeRndr_->isValid()
@@ -16435,7 +15971,7 @@ bool Style::renderElement(QPainter *painter,
                                                .replace("-pressed","-normal")
                                                .replace("-focused","-normal"))))
   {
-    renderer = themeRndr_;
+    renderer = themeRndr_.get();
   }
   /* always use the default SVG image (which doesn't contain
      any object for the inactive state) as fallback */
@@ -16448,7 +15984,7 @@ bool Style::renderElement(QPainter *painter,
                                                .replace("-pressed","-normal")
                                                .replace("-focused","-normal")))
     {
-      renderer = defaultRndr_;
+      renderer = defaultRndr_.get();
     }
   }
   if (!renderer) return false;
@@ -16524,7 +16060,7 @@ void Style::renderSliderTick(QPainter *painter,
   if (!ticksRect.isValid())
     return;
 
-  QSvgRenderer *renderer = 0;
+  QSvgRenderer *renderer = nullptr;
   QString _element(element);
 
   if (themeRndr_ && themeRndr_->isValid()
@@ -16532,12 +16068,12 @@ void Style::renderSliderTick(QPainter *painter,
           || (_element.contains("-inactive")
               && themeRndr_->elementExists(_element.remove("-inactive")))))
   {
-    renderer = themeRndr_;
+    renderer = themeRndr_.get();
   }
   else if (defaultRndr_ && defaultRndr_->isValid()
            && defaultRndr_->elementExists(_element.remove("-inactive")))
   {
-    renderer = defaultRndr_;
+    renderer = defaultRndr_.get();
   }
   else
     return;

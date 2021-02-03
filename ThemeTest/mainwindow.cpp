@@ -15,7 +15,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    QDir path(qApp->applicationDirPath() + "/Themes/kvantum/");
+    QDir path("Themes/kvantum/");
     QStringList files = path.entryList(QDir::Dirs | QDir::NoDot | QDir::NoDotDot);
     ui->cmbSvgThemes->addItems(files);
 }
@@ -27,8 +27,17 @@ MainWindow::~MainWindow()
 
 void MainWindow::on_btnApply_clicked()
 {
-    QString theme_name = ui->cmbSvgThemes->currentText();
+    QString dir = "Themes/Kvantum/";
 
+    QString theme_name = ui->cmbSvgThemes->currentText();
+    QString config_file  = dir + theme_name + "/" + theme_name + ".kvconfig";
+    QString svg_file     = dir + theme_name + "/" + theme_name + ".svg";
+    QString color_config = dir + theme_name + "/" + theme_name + ".colors";
+    if (!QFile::exists(color_config))
+        color_config.clear();
+
+    // get the current style engine, it's expected to be kvantum,
+    // if not then bork
     QStyle* style = qApp->style();
 
     // this hack is done so that this executable doesn't need to
@@ -37,11 +46,16 @@ void MainWindow::on_btnApply_clicked()
     void* ptr = qvariant_cast<void*>(hack);
 
     auto* theme_changer = static_cast<Kvantum::IKvantumThemeChanger*>(ptr);
-    // this doesn't currently work correctly
-    //theme_changer->setTheme(style, theme_name, false);
-
-    QStyle* skin = theme_changer->makeSkin(qApp->applicationDirPath(), theme_name, false);
-    qApp->setStyle(skin);
+    if (!theme_changer->setTheme(style, config_file, svg_file, color_config)) {
+        QMessageBox msg(this);
+        msg.setStandardButtons(QMessageBox::Ok);
+        msg.setText("Failed to load the theme.");
+        msg.setWindowTitle("Oopsie!");
+        msg.setIcon(QMessageBox::Critical);
+        msg.exec();
+        return;
+    }
+    qApp->setPalette(style->standardPalette());
 
     ui->lblTheme->setText(QString("Current Theme: %1").arg(theme_name));
 }

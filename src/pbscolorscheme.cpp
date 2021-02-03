@@ -253,13 +253,13 @@ PBSColorSchemePrivate::PBSColorSchemePrivate(PBSColorConfig &config,
         SetDefaultColors defaults)
 {
     _contrast = config.contrastF();
-    qDebug() << "Con: " << _contrast;
+    //qDebug() << "Con: " << _contrast;
 
     // loaded-from-config colors (no adjustment)
-    _brushes.bg[0] = config.readBrush(group, QString("BackgroundNormal"), SET_DEFAULT(NormalBackground));    
+    _brushes.bg[0] = config.readBrush(group, QString("BackgroundNormal"), SET_DEFAULT(NormalBackground));
     _brushes.bg[1] = config.readBrush(group, QString("BackgroundAlternate"), SET_DEFAULT(AlternateBackground));
 
-    qDebug() << "Brush " << group << " " << _brushes.bg[0] << " Brush 2 " << _brushes.bg[1].color();
+    //qDebug() << "Brush " << group << " " << _brushes.bg[0] << " Brush 2 " << _brushes.bg[1].color();
     // the rest
     init(config, state, group, defaults);
 }

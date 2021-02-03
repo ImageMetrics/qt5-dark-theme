@@ -1,21 +1,23 @@
 #include "pbscolorconfig.h"
 #include <QDebug>
 
-PBSColorConfig::PBSColorConfig(const QString fn) :
-    colorSettings(fn, QSettings::IniFormat)
+PBSColorConfig::PBSColorConfig(const QString& file)
 {
+    load(file);
 }
 
-PBSColorConfig::~PBSColorConfig()
+bool PBSColorConfig::load(const QString& file)
 {
+    colorSettings.reset(new QSettings(file, QSettings::IniFormat));
+    return colorSettings->status() == QSettings::NoError;
 }
 
 QString PBSColorConfig::readString(const QString &group, const QString &key, QString aDefault)
 {
-    colorSettings.beginGroup(group);
-    QVariant v = colorSettings.value(key, aDefault);
+    colorSettings->beginGroup(group);
+    QVariant v = colorSettings->value(key, aDefault);
 
-    colorSettings.endGroup();
+    colorSettings->endGroup();
 
     return v.type() == QVariant::StringList ? v.toStringList().join(",") : v.toString();
 }

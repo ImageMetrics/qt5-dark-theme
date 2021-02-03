@@ -23,11 +23,13 @@
 #include <QItemDelegate>
 #include <QAbstractItemView>
 #include <QApplication>
+#include <memory>
 
 #include "shortcuthandler.h"
 #include "windowmanager.h"
 #include "ThemeConfig.h"
 #include "blurhelper.h"
+#include "pbscolorconfig.h"
 #if QT_VERSION >= 0x050500
 #include "animation.h"
 #endif
@@ -40,8 +42,7 @@ class IKvantumThemeChanger
 {
   public:
     virtual ~IKvantumThemeChanger() = default;
-    virtual void setTheme(void* kvantum_style, const QString &baseThemeName, bool useDark) = 0;
-    virtual QStyle* makeSkin(const QString& theme_home, const QString& theme_name, bool use_dark) = 0;
+    virtual bool setTheme(void* kvantum_style, const QString &config, const QString& svg, const QString& color_config) = 0;
 };
 
 /*#if QT_VERSION >= 0x050000
@@ -94,7 +95,7 @@ class Style : public QCommonStyle {
   Q_CLASSINFO("X-KDE-CustomElements","true")
 
   public:
-    Style(bool useDark);
+    Style();
     ~Style();
 
     void polish(QWidget *widget);
@@ -153,7 +154,11 @@ class Style : public QCommonStyle {
                        const QStyleOption *option = 0,
                        const QWidget *widget = 0) const;
 
-  virtual void setTheme(const QString &baseThemeName, bool useDark);
+    virtual QPalette standardPalette() const override;
+
+    virtual bool setTheme(const QString& kv, const QString& svg, const QString& colors);
+    virtual void setTheme(const QString &baseThemeName, bool useDark)
+    {}
 
   protected:
     /* Set up a theme with the given name. If there is no name,
@@ -348,6 +353,8 @@ class Style : public QCommonStyle {
       return false;
     }
 
+    void probeTheme();
+
 #if QT_VERSION >= 0x050500
     /* For transient scrollbars: */
     void startAnimation(Animation *animation) const;
@@ -369,17 +376,27 @@ class Style : public QCommonStyle {
 #endif
 
   protected:
-    QSvgRenderer *defaultRndr_, *themeRndr_;
-    ThemeConfig *defaultSettings_, *themeSettings_, *settings_;
+    std::unique_ptr<QSvgRenderer> defaultRndr_;
+    std::unique_ptr<QSvgRenderer> themeRndr_;
+    std::unique_ptr<ThemeConfig> defaultSettings_;
+    std::unique_ptr<ThemeConfig> themeSettings_;
+    std::unique_ptr<PBSColorConfig> colorConfig_;
+    // points to either default settings or theme settings.
+    ThemeConfig* settings_ = nullptr;
 
     QString xdg_config_home;
 
-    QTimer *progressTimer_, *opacityTimer_, *opacityTimerOut_;
-    mutable int animationOpacity_, animationOpacityOut_; // A value >= 100 stops state change animation.
+    QTimer* progressTimer_ = nullptr;
+    QTimer* opacityTimer_ = nullptr;
+    QTimer* opacityTimerOut_ = nullptr;
+    mutable int animationOpacity_ = 100;
+    mutable int animationOpacityOut_ = 100; // A value >= 100 stops state change animation.
     /* The start state for state change animation */
-    mutable QString animationStartState_, animationStartStateOut_;
+    mutable QString animationStartState_ = "normal";
+    mutable QString animationStartStateOut_ = "normal";
     /* The widget whose state change is animated */
-    QPointer<QWidget> animatedWidget_, animatedWidgetOut_;
+    QPointer<QWidget> animatedWidget_ = nullptr;
+    QPointer<QWidget> animatedWidgetOut_ = nullptr;
     QHash<QWidget*, QPointer<QWidget>> popupOrigins_;
 
     /* List of busy progress bars */
@@ -388,9 +405,9 @@ class Style : public QCommonStyle {
     QSet<const QWidget*> translucentWidgets_;
     mutable QSet<QWidget*> forcedTranslucency_;
 
-    ShortcutHandler *itsShortcutHandler_;
-    WindowManager *itsWindowManager_;
-    BlurHelper *blurHelper_;
+    ShortcutHandler *itsShortcutHandler_ = nullptr;
+    WindowManager *itsWindowManager_ = nullptr;
+    BlurHelper *blurHelper_ = nullptr;
 
     /* The general specification of the theme */
     theme_spec tspec_;
@@ -399,29 +416,33 @@ class Style : public QCommonStyle {
     /* The color specification of the theme */
     color_spec cspec_;
     /* All general info about tabs */
-    bool hasActiveIndicator_, joinedActiveTab_, joinedActiveFloatingTab_, hasFloatingTabs_;
+    bool hasActiveIndicator_ = false;
+    bool joinedActiveTab_ = false;
+    bool joinedActiveFloatingTab_ = false;
+    bool hasFloatingTabs_ = false;
 
     /* LibreOffice and Plasma need workarounds. */
-    bool isLibreoffice_, isPlasma_;
+    bool isLibreoffice_ = false;
+    bool isPlasma_ = false;
     /* So far, only VirtualBox has introduced
        itself as "Qt-subapplication" and doesn't
-       accept compositing. */
-    bool subApp_;
+       accept compositing.*/
+    bool subApp_ = false;
     /* Some apps shouldn't have translucent windows. */
-    bool isOpaque_;
+    bool isOpaque_ = false;
 
     /* Hacks */
-    bool isDolphin_;
-    bool isPcmanfm_;
+    bool isDolphin_ = false;
+    bool isPcmanfm_ = false;
 
     /* For identifying KisSliderSpinBox */
-    bool isKisSlider_;
+    bool isKisSlider_ = false;
 
     /* For having clear label icons with QT_DEVICE_PIXEL_RATIO > 1 but without AA_UseHighDpiPixmaps */
-    int pixelRatio_;
+    int pixelRatio_ = 1;
 
     /* For not calculating the extra combo width repeatedly. */
-    mutable int extraComboWidth_;
+    mutable int extraComboWidth_ = 0;
 
     /* Keep track of the sunken button (used instead of a private header for menu positioning). */
     //mutable KvPointer<QWidget> sunkenButton_;
@@ -432,18 +453,18 @@ class Style : public QCommonStyle {
     QList<int> menuShadow_;
 
     /* Is this DE GTK-based? Currently Gnome, Unity and Pantheon are supported. */
-    bool gtkDesktop_;
+    bool gtkDesktop_ = false;
     /* Under Gnome and Unity, we disable compositing because otherwise, DE shadows
        would be drawn around Kvantum's menu shadows. Other DEs have their own ways
        of preventing that or the user could disable compositing with Kvantum Manager. */
-    bool noComposite_;
+    bool noComposite_ = false;
     /* For correct updating on mouseover with active tab overlapping */
     QRect tabHoverRect_;
 
     /* for enforcing the text color of inactive selected items */
-    bool hasInactiveSelItemCol_;
+    bool hasInactiveSelItemCol_ = false;
     /* Does the toggled (active but unfocused) view-item have a high contrast with the pressed one? */
-    bool toggledItemHasContrast_;
+    bool toggledItemHasContrast_ = false;
 
 #if QT_VERSION >= 0x050500
     mutable QHash<const QObject*, Animation*> animations_; // For transient scrollbars

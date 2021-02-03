@@ -4,13 +4,14 @@
 #include <QSettings>
 #include <QColor>
 #include <QBrush>
+#include <memory>
 
 class PBSColorConfig
 {
 public:
-    PBSColorConfig(const QString);
-    ~PBSColorConfig();
-
+    PBSColorConfig(const QString& file);
+    PBSColorConfig() = default;
+    bool load(const QString& file);
     QString readString(const QString &group, const QString &key, QString aDefault);
     int readInt(const QString &group, const QString &key, int aDefault);
     qreal readQReal(const QString &group, const QString &key, qreal aDefault);
@@ -19,14 +20,14 @@ public:
 
     QColor readBrush(const QString &group, const QString &key, QColor);
 
-    QSettings &settings() { return colorSettings; }
+    QSettings &settings() { return *colorSettings; }
 
     static QByteArray serializeList(const QList<QByteArray> &list);
     static QStringList deserializeList(const QString &data);
 
     qreal contrastF();
 private:
-    QSettings colorSettings;
+    std::unique_ptr<QSettings> colorSettings;
 };
 
 #endif // PBSCOLORCONFIG_H

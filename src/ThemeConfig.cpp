@@ -28,7 +28,7 @@
 #endif
 
 namespace Kvantum {
-ThemeConfig::ThemeConfig(const QString& theme) :
+ThemeConfig::ThemeConfig() :
   settings_(NULL),
   parentConfig_(NULL)
 {
@@ -43,7 +43,9 @@ ThemeConfig::ThemeConfig(const QString& theme) :
 #else
   isX11_ = false;
 #endif
-
+}
+ThemeConfig::ThemeConfig(const QString& theme) : ThemeConfig()
+{
   load(theme);
 }
 
@@ -55,18 +57,15 @@ ThemeConfig::~ThemeConfig()
   settings_ = Q_NULLPTR;
 }
 
-void ThemeConfig::load(const QString& theme)
+bool ThemeConfig::load(const QString& theme)
 {
   if (settings_)
   {
     delete settings_;
     settings_ = NULL;
   }
-
-  if (!QFile::exists(theme))
-    return;
-
   settings_ = new QSettings(theme,QSettings::IniFormat);
+  return settings_->status() == QSettings::NoError;
 }
 
 QVariant ThemeConfig::getValue(const QString& group, const QString& key) const
