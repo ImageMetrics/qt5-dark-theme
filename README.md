@@ -1,4 +1,6 @@
-# kvantum-on-windows-with-QT
+# kvantum-on-windows
+
+<p align="center"><img src="https://github.com/ensisoft/kvantum-on-windows/blob/master/screens/preview.png" width= 600"/></p>
 
 Kvantum Qt5 style engine port for Windows. Currently a bit hacky, use at your own risk. The default Kvantum theme is built into the library so in order to use that no runtime (.svg etc file resources) are needed! Qt looks for style plugins inside your applications styles/ folders. You should be able to drop Kvantum.dll there once you've built it then it should just work. There are two ways to ask Qt to use the style.
 
@@ -18,8 +20,8 @@ Building:
 * Qt5 (expected install location is c:/5.15.2/msvc2019_64)
 
 ```
-$ git clone https://github.com/ensisoft/kvantum-on-windows-with-QT
-$ cd kvantum-on-windows-with-QT
+$ git clone https://github.com/ensisoft/kvantum-on-windows
+$ cd kvantum-on-windows
 $ mkdir build
 $ cmake -G "Visual Studio 16 2019" ..
 $ cmake --build . --config Release
