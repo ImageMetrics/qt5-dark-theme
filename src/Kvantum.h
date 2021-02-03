@@ -36,6 +36,14 @@ class QSvgRenderer;
 
 namespace Kvantum {
 
+class IKvantumThemeChanger
+{
+  public:
+    virtual ~IKvantumThemeChanger() = default;
+    virtual void setTheme(void* kvantum_style, const QString &baseThemeName, bool useDark) = 0;
+    virtual QStyle* makeSkin(const QString& theme_home, const QString& theme_name, bool use_dark) = 0;
+};
+
 /*#if QT_VERSION >= 0x050000
 template <typename T> using KvPointer = QPointer<T>;
 #else

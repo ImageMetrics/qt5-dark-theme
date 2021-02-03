@@ -1,39 +1,41 @@
-#include "mainwindow.h"
+
 #include <QApplication>
+#include <QStyle>
 
-#include <PBSColorConfig.h>
-#include <pbscolorscheme.h>
-#include <QDebug>
+#include <iostream>
 
-#include <Kvantum.h>
-#include <pbsskin.h>
+#include "mainwindow.h"
+
 
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
 
-/*
-    PBSColorConfig c("e:\\QtTest\\ThemeTest2\\build-ThemeTest-Desktop_Qt_5_10_0_MinGW_32bit-Debug\\debug\\colors\\KvAdapta.colors");
+    // Kvantum style test application.
+    //
+    // kvantum style engine is a Qt plugin that has 2 built-in themes.
+    // kvantum and kvantum-dark.
+    // It also has potential to load more themes (see themes/kvantum)
+    // through PBSSkin style which is an extension of the kvantum base style
+    // which is a QStyle implementation.
+    // the plugin needs to be built and installed into styles/ then Qt
+    // will try to find it.
+    //
+    // Qt also understands the -style command line parameter but here
+    // we try to set the style programmatically.
 
-    qDebug() << "String : " << c.readString("Colors:Button", "ForegroundActive", "0.00");
-    qDebug() << "Integer: " << c.readInt("ColorEffects:Inactive", "ColorEffect", 0);
-    qDebug() << "Bool   : " << c.readBool("ColorEffects:Inactive", "ChangeSelectionColor", false);
-    qDebug() << "Real   : " << c.readQReal("ColorEffects:Inactive", "ContrastAmount", 11.00);
-    qDebug() << "Color  : " << c.readColor("Colors:Button", "ForegroundNegative", QColor(0, 0, 0));
-
-    qDebug() << "Renk   : " << QColor(191,3,3);
-*/
-
-    Kvantum::PBSSkin *style = new Kvantum::PBSSkin(false);
-    a.setStyle(style);
-
-    // a.setStyle("Fusion");
-
-//    PBSColorConfig c("e:\\QtTest\\ThemeTest2\\build-ThemeTest-Desktop_Qt_5_10_0_MinGW_32bit-Debug\\debug\\colors\\KvAdaptaDark.colors");
-//    a.setPalette(PBSColorScheme::createApplicationPalette(static_cast<PBSColorConfig&>(c)));
-
+    QStyle* kvantum = QApplication::setStyle("kvantum");
+    if (kvantum == nullptr) {
+        std::cout << "Failed to create kvantum style.\n";
+        std::cout << "Do you have styles/Kvantum.dll?\n";
+        std::cout << "It should have been built when this executable was built.\n";
+        std::cout << "If styles/Kvantum.dll exists when I have no idea. Sorry :(\n";
+        return 1;
+    } else {
+        std::cout << "Set application style to 'kvantum with default theme.'";
+        std::cout << std::endl;
+    }
     MainWindow w;
     w.show();
-
     return a.exec();
 }

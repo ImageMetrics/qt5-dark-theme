@@ -42,9 +42,10 @@ static inline bool isThemeDir(const QString &path, const QString &themeName)
   return false;
 }
 
-PBSSkin::PBSSkin(bool useDark) : Style(useDark)
+PBSSkin::PBSSkin(QString theme_home, bool useDark) : Style(useDark)
 {
-    xdg_config_home = qApp->applicationDirPath();
+    //xdg_config_home = qApp->applicationDirPath();
+    xdg_config_home = theme_home;
 }
 
 void PBSSkin::setTheme(const QString &baseThemeName, bool useDark)

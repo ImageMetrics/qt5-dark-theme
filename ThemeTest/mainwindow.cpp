@@ -3,11 +3,9 @@
 #include <QDir>
 #include <QDebug>
 #include <QFile>
-
-#include <pbscolorconfig.h>
-#include <pbscolorscheme.h>
 #include <QMessageBox>
-#include <pbsskin.h>
+
+#include <Kvantum.h>
 
 #define USEKVANTUM
 
@@ -16,19 +14,10 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-#ifdef USEKVANTUM
-    QDir path(qApp->applicationDirPath() + "/Themes/kvAntum");
-    QStringList files = path.entryList(QDir::Dirs);
 
-    qDebug() << files;
-
-    ui->colorsCombo->addItems(files);
-#else
-    QDir path(qApp->applicationDirPath() + "/Colors");
-    QStringList files = path.entryList(QDir::Files);
-
-    ui->colorsCombo->addItems(files);
-#endif
+    QDir path(qApp->applicationDirPath() + "/Themes/kvantum/");
+    QStringList files = path.entryList(QDir::Dirs | QDir::NoDot | QDir::NoDotDot);
+    ui->cmbSvgThemes->addItems(files);
 }
 
 MainWindow::~MainWindow()
@@ -36,42 +25,25 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::on_colorsCombo_currentIndexChanged(const QString &arg1)
+void MainWindow::on_btnApply_clicked()
 {
-#ifdef USEKVANTUM
-        Kvantum::PBSSkin *sk = static_cast<Kvantum::PBSSkin *>(qApp->style());
-        if(sk)
-        {
-            if(arg1.at(0) != '.')
-            {
-                try
-                {
-                    sk->setTheme(arg1, false);
-                    update();
-                }
-                catch (std::exception &e)
-                {
-                    qDebug() << "Hata :" << e.what();
-                }
-            }
-        }
-#else
-    if(arg1.at(0) == '.')
-        return;
+    QString theme_name = ui->cmbSvgThemes->currentText();
 
-    QString s(qApp->applicationDirPath() + QString("/Colors/%1").arg(arg1));
-    qDebug() << s;
+    QStyle* style = qApp->style();
 
-    if(QFile::exists(s))
-    {
-        PBSColorConfig c(s);
-        // PBSColorScheme sc(QPalette::Active, c);
+    // this hack is done so that this executable doesn't need to
+    // link against kvantum.dll
+    QVariant hack = style->property("__kvantum_theme_hack");
+    void* ptr = qvariant_cast<void*>(hack);
 
-        qApp->setPalette(PBSColorScheme::createApplicationPalette(static_cast<PBSColorConfig&>(c)));
+    auto* theme_changer = static_cast<Kvantum::IKvantumThemeChanger*>(ptr);
+    // this doesn't currently work correctly
+    //theme_changer->setTheme(style, theme_name, false);
 
-        update();
-    }
-#endif
+    QStyle* skin = theme_changer->makeSkin(qApp->applicationDirPath(), theme_name, false);
+    qApp->setStyle(skin);
+
+    ui->lblTheme->setText(QString("Current Theme: %1").arg(theme_name));
 }
 
 void MainWindow::on_pushButton_8_clicked()

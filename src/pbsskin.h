@@ -13,7 +13,7 @@ class PBSSkin : public Style
 {
     Q_OBJECT
 public:
-    PBSSkin(bool useDark);
+    PBSSkin(QString theme_home, bool useDark);
 
     void setTheme(const QString &baseThemeName, bool useDark) Q_DECL_OVERRIDE;
 signals:

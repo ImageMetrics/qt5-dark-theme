@@ -1,12 +1,32 @@
 # kvantum-on-windows-with-QT
-kvAntum Theme and KColorScheme On Windows For Single QT Application
 
-<p align="center"><img src="https://github.com/celibol/kvantum-on-windows-with-QT/blob/master/Adapta.png" width= 350"/></p>
-<p align="center"><img src="https://github.com/celibol/kvantum-on-windows-with-QT/blob/master/AdaptaDark4.png" width= 350"/></p> 
-<p align="center"><img src="https://github.com/celibol/kvantum-on-windows-with-QT/blob/master/gnomish.png" width= 350"/></p>
-<p align="center"><img src="https://github.com/celibol/kvantum-on-windows-with-QT/blob/master/gnomish2.png" width= 350"/></p>
-<p align="center"><img src="https://github.com/celibol/kvantum-on-windows-with-QT/blob/master/app1.png" width= 350"/></p>
-<p align="center"><img src="https://github.com/celibol/kvantum-on-windows-with-QT/blob/master/app8.png" width= 350"/></p>
-<p align="center"><img src="https://github.com/celibol/kvantum-on-windows-with-QT/blob/master/app10.png" width= 350"/></p>
-<p align="center"><img src="https://github.com/celibol/kvantum-on-windows-with-QT/blob/master/app3.png" width= 350"/></p>
-<p align="center"><img src="https://github.com/celibol/kvantum-on-windows-with-QT/blob/master/app2.png" width= 350"/></p>
+Kvantum Qt5 style engine port for Windows. Currently a bit hacky, use at your own risk. The default Kvantum theme is built into the library so in order to use that no runtime (.svg etc file resources) are needed! Qt looks for style plugins inside your applications styles/ folders. You should be able to drop Kvantum.dll there once you've built it then it should just work. There are two ways to ask Qt to use the style.
+
+- Either pass -style command line parameter at your application startup
+- Call QApplication::setStyle("kvantum") or QApplication::setStyle("kvantum-dark")
+
+You should also be able to use your preferred svg theme and built it into the library if you prefer to do so. Basically easiest solution should be to copy the themes .kvconfig and .svg file into default/ and overwrite the original files and rebuild the library.
+
+Current TODO:
+* Merge new changes from upstream.
+* Cleanup PBSKSkin (is this even in upstream??)
+
+
+Building:
+* msvs2019
+* cmake
+* Qt5 (expected install location is c:/5.15.2/msvc2019_64)
+
+```
+$ git clone https://github.com/ensisoft/kvantum-on-windows-with-QT
+$ cd kvantum-on-windows-with-QT
+$ mkdir build
+$ cmake -G "Visual Studio 16 2019" ..
+$ cmake --build . --config Release
+$ cmake --install . --config Release
+$ cd ../bin
+$ Test.exe
+
+
+Thanks to @Tsujan for the original Kvantum engine and @celibol for the initial Windows port.
+

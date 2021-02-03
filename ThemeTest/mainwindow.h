@@ -16,8 +16,7 @@ public:
     ~MainWindow();
 
 private slots:
-    void on_colorsCombo_currentIndexChanged(const QString &arg1);
-
+    void on_btnApply_clicked();
     void on_pushButton_8_clicked();
 
 private:
