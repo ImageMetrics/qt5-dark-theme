@@ -16,18 +16,30 @@ public:
 ThemeChanger theme_changer;
 } // namespace
 
-QStringList KvantumStylePlugin::keys() const
-{
-    QStringList ret;
-    ret << "kvantum";
-    return ret;
-}
-
 QStyle* KvantumStylePlugin::create(const QString& key)
 {
-    QStyle* ret = nullptr;
+    // the keys are listed in kvantum.json
+
+    Kvantum::Style* ret = nullptr;
     if (key == "kvantum")
         ret = new Kvantum::Style();
+    else if (key == "darklines") {
+        ret = new Kvantum::Style();
+        ret->setTheme(":DarkLines/DarkLines.config",
+                      ":DarkLines/DarkLines.svg",
+                      ":DarkLines/DarkLines.colors");
+    }
+    else if (key == "kvantum-curves") {
+        ret = new Kvantum::Style();
+        ret->setTheme(":KvCurves/KvCurves.config",
+                      ":KvCurves/KvCurves.svg",
+                      ":KvCurves/KvCurves.colors");
+    } else if (key == "kvantum-dark-red") {
+        ret = new Kvantum::Style();
+        ret->setTheme(":KvDarkRed/KvDarkRed.config",
+                      ":KvDarkRed/KvDarkRed.svg",
+                      ":KvDarkRed/KvDarkRed.colors");
+    }
     else return nullptr;
     ret->setProperty("__kvantum_theme_hack", QVariant::fromValue((void*)&theme_changer));
     return ret;

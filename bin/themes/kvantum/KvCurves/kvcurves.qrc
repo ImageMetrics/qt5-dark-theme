@@ -1,0 +1,7 @@
+<RCC>
+  <qresource prefix="KvCurves" >
+    <file>KvCurves.svg</file>
+    <file>KvCurves.kvconfig</file>
+    <file>KvCurves.colors</file>
+  </qresource>
+</RCC>

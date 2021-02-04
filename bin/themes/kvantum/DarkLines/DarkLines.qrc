@@ -1,0 +1,7 @@
+<RCC>
+  <qresource prefix="DarkLines" >
+    <file>DarkLines.svg</file>
+    <file>DarkLines.kvconfig</file>
+    <file>DarkLines.colors</file>
+  </qresource>
+</RCC>

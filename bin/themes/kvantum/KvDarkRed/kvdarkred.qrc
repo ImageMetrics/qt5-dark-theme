@@ -1,0 +1,7 @@
+<RCC>
+  <qresource prefix="KvDarkRed" >
+    <file>KvDarkRed.svg</file>
+    <file>KvDarkRed.kvconfig</file>
+    <file>KvDarkRed.colors</file>
+  </qresource>
+</RCC>
