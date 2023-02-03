@@ -300,6 +300,11 @@ class Style : public QCommonStyle {
       return interiorRect(bounds,f).adjusted(t.left,t.top,-t.right,-t.bottom);
     }
 
+    QWidget* getParent(const QWidget *widget, int level) const;
+    bool enoughContrast(const QColor &col1, const QColor &col2) const;
+    QColor overlayColor(const QColor &bgCol, const QColor &overlayCol) const;
+
+
     /* Can an expanded border be drawn for this frame? */
     bool hasExpandedBorder(const frame_spec &fspec) const;
 
@@ -340,6 +345,9 @@ class Style : public QCommonStyle {
     {
       forceButtonTextColor(const_cast<QWidget*>(widget), col);
     }
+
+    /* Gets color from #rrggbbaa. */
+    QColor getFromRGBA(const QString &str) const;
 
     /* Used only with combo menus. */
     bool hasParent(const QWidget *widget, const char *className) const
