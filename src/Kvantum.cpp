@@ -84,85 +84,20 @@
 namespace Kvantum
 {
 
-static void setGtkVariant(QWidget *widget, bool dark) // by Craig Drummond
+// Taken from https://www.w3.org/TR/WCAG20/.
+// It isn't related to HSL lightness.
+static inline qreal luminance(const QColor &col)
 {
-  if (!widget || QLatin1String("xcb")!=qApp->platformName()) {
-    return;
-  }
-  static const char *_GTK_THEME_VARIANT="_GTK_THEME_VARIANT";
+  /* all divided by 255 */
+  qreal R = col.redF();
+  qreal G = col.greenF();
+  qreal B = col.blueF();
 
-  // Check if already set
-  QByteArray styleVar = dark ? "dark" : "light";
-  QVariant var=widget->property("_GTK_THEME_VARIANT");
-  if (var.isValid() && var.toByteArray()==styleVar) {
-    return;
-  }
+  if(R <= 0.03928) R = R/12.92; else R = qPow((R + 0.055)/1.055, 2.4);
+  if(G <= 0.03928) G = G/12.92; else G = qPow((G + 0.055)/1.055, 2.4);
+  if(B <= 0.03928) B = B/12.92; else B = qPow((B + 0.055)/1.055, 2.4);
 
-  // Typedef's from xcb/xcb.h - copied so that there is no
-  // direct xcb dependency
-  typedef quint32 XcbAtom;
-
-  struct XcbInternAtomCookie {
-    unsigned int sequence;
-  };
-
-  struct XcbInternAtomReply {
-    quint8  response_type;
-    quint8  pad0;
-    quint16 sequence;
-    quint32 length;
-    XcbAtom atom;
-  };
-
-  typedef void * (*XcbConnectFn)(int, int);
-  typedef XcbInternAtomCookie (*XcbInternAtomFn)(void *, int, int, const char *);
-  typedef XcbInternAtomReply * (*XcbInternAtomReplyFn)(void *, XcbInternAtomCookie, int);
-  typedef int (*XcbChangePropertyFn)(void *, int, int, XcbAtom, XcbAtom, int, int, const void *);
-  typedef int (*XcbFlushFn)(void *);
-
-  static QLibrary *lib = 0;
-  static XcbAtom variantAtom = 0;
-  static XcbAtom utf8TypeAtom = 0;
-  static void *xcbConn = 0;
-  static XcbChangePropertyFn XcbChangePropertyFnPtr = 0;
-  static XcbFlushFn XcbFlushFnPtr = 0;
-
-  if (!lib) {
-    lib = new QLibrary("libxcb", qApp);
-
-    if (lib->load()) {
-      XcbConnectFn XcbConnectFnPtr=(XcbConnectFn)lib->resolve("xcb_connect");
-      XcbInternAtomFn XcbInternAtomFnPtr=(XcbInternAtomFn)lib->resolve("xcb_intern_atom");
-      XcbInternAtomReplyFn XcbInternAtomReplyFnPtr=(XcbInternAtomReplyFn)lib->resolve("xcb_intern_atom_reply");
-
-      XcbChangePropertyFnPtr=(XcbChangePropertyFn)lib->resolve("xcb_change_property");
-      XcbFlushFnPtr=(XcbFlushFn)lib->resolve("xcb_flush");
-      if (XcbConnectFnPtr && XcbInternAtomFnPtr && XcbInternAtomReplyFnPtr && XcbChangePropertyFnPtr && XcbFlushFnPtr) {
-        xcbConn=(*XcbConnectFnPtr)(0, 0);
-        if (xcbConn) {
-          XcbInternAtomReply *typeReply = (*XcbInternAtomReplyFnPtr)(xcbConn, (*XcbInternAtomFnPtr)(xcbConn, 0, 11, "UTF8_STRING"), 0);
-
-          if (typeReply) {
-            XcbInternAtomReply *gtkVarReply = (*XcbInternAtomReplyFnPtr)(xcbConn, (*XcbInternAtomFnPtr)(xcbConn, 0, strlen(_GTK_THEME_VARIANT),
-                                                                                                        _GTK_THEME_VARIANT), 0);
-            if (gtkVarReply) {
-               utf8TypeAtom = typeReply->atom;
-               variantAtom = gtkVarReply->atom;
-               free(gtkVarReply);
-            }
-            free(typeReply);
-          }
-        }
-      }
-    }
-  }
-
-  if (0!=variantAtom) {
-    (*XcbChangePropertyFnPtr)(xcbConn, 0, widget->effectiveWinId(), variantAtom, utf8TypeAtom, 8,
-                              styleVar.length(), (const void *)styleVar.constData());
-    (*XcbFlushFnPtr)(xcbConn);
-    widget->setProperty(_GTK_THEME_VARIANT, styleVar);
-  }
+  return 0.2126*R + 0.7152*G + 0.0722*B;
 }
 
 
@@ -539,7 +474,7 @@ QWidget * Style::getParent (const QWidget *widget, int level) const
   return w;
 }
 
-static inline bool isWidgetInactive(const QWidget *widget)
+bool Style::isWidgetInactive(const QWidget *widget) const
 {
   if (widget
       /* some widgets (like KCapacityBar in kdf) may be drawn while still invisible */
@@ -659,60 +594,6 @@ bool Style::hasHighContrastWithContainer(const QWidget *w, const QColor color) c
   return false;
 }
 
-void Style::drawBg(QPainter *p, const QWidget *widget) const
-{
-  if (widget->palette().color(widget->backgroundRole()) == Qt::transparent)
-    return; // Plasma FIXME: needed?
-  QRect bgndRect(widget->rect());
-  interior_spec ispec = getInteriorSpec("DialogTranslucent");
-  if (ispec.element.isEmpty())
-    ispec = getInteriorSpec("Dialog");
-  if (!ispec.element.isEmpty()
-      && !widget->windowFlags().testFlag(Qt::FramelessWindowHint)) // not a panel
-  {
-    if (QWidget *child = widget->childAt(0,0))
-    { // even dialogs may have menubar or toolbar (as in Qt Designer)
-      if (qobject_cast<QMenuBar*>(child) || qobject_cast<QToolBar*>(child))
-      {
-        ispec = getInteriorSpec("WindowTranslucent");
-        if (ispec.element.isEmpty())
-          ispec = getInteriorSpec("Window");
-      }
-    }
-  }
-  else
-  {
-    ispec = getInteriorSpec("WindowTranslucent");
-    if (ispec.element.isEmpty())
-      ispec = getInteriorSpec("Window");
-  }
-  frame_spec fspec;
-  default_frame_spec(fspec);
-
-  QString suffix = "-normal";
-  if (isWidgetInactive(widget))
-    suffix = "-normal-inactive";
-
-  if (tspec_.no_window_pattern && (ispec.px > 0 || ispec.py > 0))
-    ispec.px = -2; // no tiling pattern with translucency
-
-  p->setClipRegion(bgndRect, Qt::IntersectClip);
-  int ro = tspec_.reduce_window_opacity;
-  if (ro > 0)
-  {
-    p->save();
-    p->setOpacity(1.0 - (qreal)tspec_.reduce_window_opacity/100.0);
-  }
-  if (!renderInterior(p,bgndRect,fspec,ispec,ispec.element+suffix))
-  { // no window interior element but with reduced translucency
-    p->fillRect(bgndRect, QApplication::palette().color(suffix.contains("-inactive")
-                                                          ? QPalette::Inactive
-                                                          : QPalette::Active,
-                                                        QPalette::Window));
-  }
-  if (ro > 0)
-    p->restore();
-}
 
 bool Style::eventFilter(QObject *o, QEvent *e)
 {

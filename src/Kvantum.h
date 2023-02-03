@@ -349,6 +349,8 @@ class Style : public QCommonStyle {
     /* Gets color from #rrggbbaa. */
     QColor getFromRGBA(const QString &str) const;
 
+    bool isWidgetInactive(const QWidget* widget) const;
+
     /* Used only with combo menus. */
     bool hasParent(const QWidget *widget, const char *className) const
     {
@@ -509,6 +511,8 @@ inline size_spec Style::getSizeSpec(const QString &widgetName) const
 {
   return settings_->getSizeSpec(widgetName);
 }
+
+void setGtkVariant(QWidget* widget, bool dark);
 
 }
 

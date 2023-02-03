@@ -30,6 +30,7 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 add_library(Kvantum SHARED
+    src/eventFiltering.cpp
     src/polishing.cpp
     src/animation.cpp
     src/animation.h
