@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>895</width>
-    <height>691</height>
+    <width>879</width>
+    <height>767</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -984,8 +984,21 @@ and dropdown menu arrow</string>
      <string>Radio/Check buttons</string>
     </attribute>
     <layout class="QGridLayout" name="gridLayout_7">
-     <item row="0" column="1">
-      <spacer name="verticalSpacer_5">
+     <item row="1" column="0" rowspan="2">
+      <spacer name="horizontalSpacer_5">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>0</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item row="3" column="1">
+      <spacer name="verticalSpacer_6">
        <property name="orientation">
         <enum>Qt::Vertical</enum>
        </property>
@@ -993,6 +1006,19 @@ and dropdown menu arrow</string>
         <size>
          <width>20</width>
          <height>0</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item row="1" column="2" rowspan="2">
+      <spacer name="horizontalSpacer_6">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>0</width>
+         <height>20</height>
         </size>
        </property>
       </spacer>
@@ -1188,21 +1214,8 @@ check box</string>
        </item>
       </layout>
      </item>
-     <item row="1" column="2" rowspan="2">
-      <spacer name="horizontalSpacer_6">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>0</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-     <item row="3" column="1">
-      <spacer name="verticalSpacer_6">
+     <item row="0" column="1">
+      <spacer name="verticalSpacer_5">
        <property name="orientation">
         <enum>Qt::Vertical</enum>
        </property>
@@ -1210,19 +1223,6 @@ check box</string>
         <size>
          <width>20</width>
          <height>0</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-     <item row="1" column="0" rowspan="2">
-      <spacer name="horizontalSpacer_5">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>0</width>
-         <height>20</height>
         </size>
        </property>
       </spacer>
@@ -2714,8 +2714,8 @@ check box</string>
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>127</width>
-              <height>133</height>
+              <width>141</width>
+              <height>143</height>
              </rect>
             </property>
             <attribute name="icon">
@@ -2766,8 +2766,8 @@ check box</string>
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>127</width>
-              <height>133</height>
+              <width>141</width>
+              <height>143</height>
              </rect>
             </property>
             <attribute name="icon">
@@ -2971,14 +2971,76 @@ check box</string>
      </item>
     </layout>
    </widget>
+   <widget class="QWidget" name="viewsTab">
+    <attribute name="title">
+     <string>Views</string>
+    </attribute>
+    <widget class="QWidget" name="">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>80</y>
+       <width>421</width>
+       <height>411</height>
+      </rect>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_3">
+      <item>
+       <widget class="QTableView" name="tableView1">
+        <attribute name="horizontalHeaderStretchLastSection">
+         <bool>true</bool>
+        </attribute>
+        <attribute name="verticalHeaderVisible">
+         <bool>false</bool>
+        </attribute>
+       </widget>
+      </item>
+      <item>
+       <widget class="QTableView" name="tableView2">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <attribute name="horizontalHeaderStretchLastSection">
+         <bool>true</bool>
+        </attribute>
+        <attribute name="verticalHeaderVisible">
+         <bool>false</bool>
+        </attribute>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+    <widget class="QWidget" name="">
+     <property name="geometry">
+      <rect>
+       <x>450</x>
+       <y>80</y>
+       <width>411</width>
+       <height>411</height>
+      </rect>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_4">
+      <item>
+       <widget class="QListView" name="listView1"/>
+      </item>
+      <item>
+       <widget class="QListView" name="listView2">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>895</width>
-     <height>21</height>
+     <width>879</width>
+     <height>23</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">

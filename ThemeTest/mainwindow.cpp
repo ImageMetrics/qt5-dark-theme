@@ -4,16 +4,73 @@
 #include <QDebug>
 #include <QFile>
 #include <QMessageBox>
+#include <QAbstractTableModel>
+#include <QABstractListModel>
 
 #include <Kvantum.h>
 
+#include <vector>
+
 #define USEKVANTUM
+
+struct Fruit {
+    QString name;
+    QString color;
+};
+
+class TableModel : public QAbstractTableModel
+{
+public:
+    TableModel()
+    {
+        mFruits.push_back({ "Banana", "Yellow" });
+        mFruits.push_back({ "Apple", "Green" });
+        mFruits.push_back({ "Orange", "Orange" });
+    }
+    virtual QVariant data(const QModelIndex& index, int role) const override
+    {
+        if (role == Qt::DisplayRole)
+        {
+            if (index.column() == 0)
+                return mFruits[index.row()].name;
+            else if (index.column() == 1)
+                return mFruits[index.row()].color;
+        }
+        return QVariant();
+    }
+    virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override
+    {
+        if (role == Qt::DisplayRole && orientation == Qt::Horizontal)
+        {
+            if (section == 0) return "Name";
+            else if (section == 1) return "Color";
+        }
+        return QVariant();
+    }
+    virtual int rowCount(const QModelIndex&) const override
+    {
+        return mFruits.size();
+    }
+    virtual int columnCount(const QModelIndex&) const override
+    {
+        return 2;
+    }
+private:
+    std::vector<Fruit> mFruits;
+
+};
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+
+    auto* table_model = new TableModel();
+    ui->tableView1->setModel(table_model);
+    ui->tableView2->setModel(table_model);
+    ui->listView1->setModel(table_model);
+    ui->listView2->setModel(table_model);
 
     QDir path("Themes/kvantum/");
     QStringList files = path.entryList(QDir::Dirs | QDir::NoDot | QDir::NoDotDot);
