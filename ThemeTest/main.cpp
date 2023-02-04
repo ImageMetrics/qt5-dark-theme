@@ -6,56 +6,110 @@
 
 #include "mainwindow.h"
 
-
-bool SetKvantum()
+class IKvantumThemeChanger
 {
-    QStyle* kvantum = QApplication::setStyle("kvantum");
+public:
+    virtual ~IKvantumThemeChanger() = default;
+    virtual bool setTheme(void* kvantum_style, const QString& config, const QString& svg, const QString& color_config) = 0;
+};
+
+bool SetTheme(const QString& theme)
+{
+    QStyle* kvantum = QApplication::style();
     if (kvantum)
     {
-        std::cout << "Set application style to 'kvantum with default theme.'";
-        std::cout << std::endl;
+        // this hack is done so that this executable doesn't need to
+        // link against kvantum.dll
+        QVariant hack = kvantum->property("__kvantum_theme_hack");
+        if (!hack.isValid())
+            return false;
+
+        void* ptr = qvariant_cast<void*>(hack);
+        auto* theme_changer = static_cast<IKvantumThemeChanger*>(ptr);
+        bool ret = true;
+        if (theme == "darklines")
+        {
+            if (!theme_changer->setTheme(kvantum,
+                ":DarkLines/DarkLines.kvconfig",
+                ":DarkLines/DarkLines.svg",
+                ":DarkLines/DarkLines.colors"))
+                return false;
+        }
+        else if (theme == "kvantum-curves")
+        {
+            if (!theme_changer->setTheme(kvantum,
+                ":KvCurves/KvCurves.kvconfig",
+                ":KvCurves/KvCurves.svg",
+                ":KvCurves/KvCurves.colors"))
+                return false;
+        }
+        else if (theme == "kvantum-dark-red") {
+            if (!theme_changer->setTheme(kvantum,
+                ":KvDarkRed/KvDarkRed.kvconfig",
+                ":KvDarkRed/KvDarkRed.svg",
+                ":KvDarkRed/KvDarkRed.colors"))
+                return false;
+        }
+        else if (theme == "glow-dark")
+        {
+            if (!theme_changer->setTheme(kvantum,
+                ":kvGlowDark/kvGlowDark.kvconfig",
+                ":kvGlowDark/kvGlowDark.svg",
+                ":kvGlowDark/kvGlowDark.colors"))
+                return false;
+        }
+        qApp->setPalette(kvantum->standardPalette());
         return true;
     }
-
-    std::cout << "Failed to create kvantum style.\n";
-    std::cout << "Do you have styles/Kvantum.dll?\n";
-    std::cout << "It should have been built when this executable was built.\n";
-    std::cout << "If styles/Kvantum.dll exists when I have no idea. Sorry :(\n";
     return false;
 }
 
 int main(int argc, char* argv[])
 {
-    bool has_style_arg = false;
-
+    QString style = "kvantum";
+    QString theme;
     for (int i = 1; i < argc; ++i)
     {
-        if (!strcmp(argv[i], "-style"))
-            has_style_arg = true;
+        if (!strcmp(argv[i], "--style"))
+            style = argv[i + 1];
+        else if (!strcmp(argv[i], "--theme"))
+            theme = argv[i + 1];
     }
 
     QApplication a(argc, argv);
 
-    // Kvantum style test application.
-    //
-    // kvantum style engine is a Qt plugin that has 2 built-in themes.
-    // kvantum and kvantum-dark.
-    // It also has potential to load more themes (see themes/kvantum)
-    // through PBSSkin style which is an extension of the kvantum base style
-    // which is a QStyle implementation.
-    // the plugin needs to be built and installed into styles/ then Qt
-    // will try to find it.
-    //
-    // Qt also understands the -style command line parameter but here
-    // we try to set the style programmatically.
 
-    if (!has_style_arg)
+    if (auto* engine = QApplication::setStyle(style))
     {
-        if (!SetKvantum())
-            return 1;
+        std::cout << "Set application style to 'kvantum with default theme.'";
+        std::cout << std::endl;
+        QApplication::setPalette(engine->standardPalette());
+    }
+    else
+    {
+        std::cout << "Failed to create kvantum style.\n";
+        std::cout << "Do you have styles/Kvantum.dll?\n";
+        std::cout << "It should have been built when this executable was built.\n";
+        std::cout << "If styles/Kvantum.dll exists when I have no idea. Sorry :(\n";
+        return 1;
     }
 
     MainWindow w;
     w.show();
+
+    if (!theme.isEmpty())
+    {
+        if (SetTheme(theme))
+        {
+            std::cout << "Set application style to 'kvantum with " << theme.toStdString() << " theme.";
+            std::cout << std::endl;
+        }
+        else
+        {
+            std::cout << "Failed to set kvantum theme.";
+            std::cout << std::endl;
+            return 1;
+        }
+    }
     return a.exec();
 }
