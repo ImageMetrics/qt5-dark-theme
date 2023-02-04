@@ -7,7 +7,7 @@
 
 Qt5 style engine + several dark themes for Windows 10. Tehnically this is a Kvantum Qt5 style engine port for Windows. Currently a bit hacky, use at your own risk.
 
-<p align="center"><img src="screens/preview.png" width= 600"/><br>Theme preview</p>
+<p align="center"><img src="screens/preview.png" width= 600"/><br>Theme (Glow Dark) preview</p>
 
 
 Build instructions 👨🏼‍💻
