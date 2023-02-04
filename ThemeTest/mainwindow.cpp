@@ -6,6 +6,8 @@
 #include <QMessageBox>
 #include <QAbstractTableModel>
 #include <QABstractListModel>
+#include <qstylefactory>
+#include <QTimer>
 
 #include <Kvantum.h>
 
@@ -82,6 +84,24 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+void MainWindow::RestyleWindow()
+{
+    const QWidgetList topLevels = QApplication::topLevelWidgets();
+    for (QWidget* widget : topLevels)
+    { // this is needed with Qt >= 5.13.1 but is harmless otherwise
+        widget->setAttribute(Qt::WA_NoSystemBackground, false);
+        widget->setAttribute(Qt::WA_TranslucentBackground, false);
+    }
+
+    // Qt5 has QEvent::ThemeChange
+    const QWidgetList widgets = QApplication::allWidgets();
+    for (QWidget* widget : widgets)
+    {
+        QEvent event(QEvent::ThemeChange);
+        QApplication::sendEvent(widget, &event);
+    }
+}
+
 void MainWindow::on_btnApply_clicked()
 {
     QString dir = "Themes/Kvantum/";
@@ -100,21 +120,28 @@ void MainWindow::on_btnApply_clicked()
     // this hack is done so that this executable doesn't need to
     // link against kvantum.dll
     QVariant hack = style->property("__kvantum_theme_hack");
-    void* ptr = qvariant_cast<void*>(hack);
+    if (hack.isValid())
+    {
+        void* ptr = qvariant_cast<void*>(hack);
+        auto* theme_changer = static_cast<Kvantum::IKvantumThemeChanger*>(ptr);
+        if (!theme_changer->setTheme(style, config_file, svg_file, color_config)) {
+            QMessageBox msg(this);
+            msg.setStandardButtons(QMessageBox::Ok);
+            msg.setText("Failed to load the theme.");
+            msg.setWindowTitle("Oopsie!");
+            msg.setIcon(QMessageBox::Critical);
+            msg.exec();
+            return;
+        }
+        qApp->setPalette(style->standardPalette());
+        ui->lblTheme->setText(QString("Current Theme: %1").arg(theme_name));
 
-    auto* theme_changer = static_cast<Kvantum::IKvantumThemeChanger*>(ptr);
-    if (!theme_changer->setTheme(style, config_file, svg_file, color_config)) {
-        QMessageBox msg(this);
-        msg.setStandardButtons(QMessageBox::Ok);
-        msg.setText("Failed to load the theme.");
-        msg.setWindowTitle("Oopsie!");
-        msg.setIcon(QMessageBox::Critical);
-        msg.exec();
-        return;
+        RestyleWindow();
     }
-    qApp->setPalette(style->standardPalette());
-
-    ui->lblTheme->setText(QString("Current Theme: %1").arg(theme_name));
+    else
+    {
+        ui->lblTheme->setText("Current style engine is not kvantum.");
+    }
 }
 
 void MainWindow::on_pushButton_8_clicked()
