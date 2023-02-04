@@ -1,5 +1,8 @@
-#include "pbscolorconfig.h"
+
+#include <QFile>
 #include <QDebug>
+
+#include "pbscolorconfig.h"
 
 PBSColorConfig::PBSColorConfig(const QString& file)
 {
@@ -8,8 +11,15 @@ PBSColorConfig::PBSColorConfig(const QString& file)
 
 bool PBSColorConfig::load(const QString& file)
 {
-    colorSettings.reset(new QSettings(file, QSettings::IniFormat));
-    return colorSettings->status() == QSettings::NoError;
+    // the QSettings doesn't seem to report any failures to open the settings  file
+    // sync() changes status() but thats only for writes. There's no "isValid" either..
+    // what a piece of shit...
+    QFile io(file);
+    if (!io.open(QIODevice::ReadOnly))
+        return false;
+
+    colorSettings = std::make_unique<QSettings>(file, QSettings::IniFormat);
+    return true;
 }
 
 QString PBSColorConfig::readString(const QString &group, const QString &key, QString aDefault)

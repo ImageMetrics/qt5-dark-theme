@@ -18,54 +18,27 @@
 #include <QSettings>
 #include <QFile>
 #include <QApplication>
+
 #include "ThemeConfig.h"
-#if defined Q_WS_X11 || defined Q_OS_LINUX
-#include <QX11Info>
-#if QT_VERSION >= 0x050000
-#include <X11/Xlib.h>
-#include <X11/Xatom.h>
-#endif
-#endif
 
 namespace Kvantum {
-ThemeConfig::ThemeConfig() :
-  settings_(NULL),
-  parentConfig_(NULL)
-{
-  /* For now, the lack of x11 means wayland.
-     Later, a better method should be found. */
-#if defined Q_WS_X11 || defined Q_OS_LINUX
-#if QT_VERSION < 0x050200
-  isX11_ = true;
-#else
-  isX11_ = QX11Info::isPlatformX11();
-#endif
-#else
-  isX11_ = false;
-#endif
-}
+
 ThemeConfig::ThemeConfig(const QString& theme) : ThemeConfig()
 {
   load(theme);
 }
 
-ThemeConfig::~ThemeConfig()
-{
-  if (settings_)
-    delete settings_;
-
-  settings_ = Q_NULLPTR;
-}
-
 bool ThemeConfig::load(const QString& theme)
 {
-  if (settings_)
-  {
-    delete settings_;
-    settings_ = NULL;
-  }
-  settings_ = new QSettings(theme,QSettings::IniFormat);
-  return settings_->status() == QSettings::NoError;
+    // the QSettings doesn't seem to report any failures to open the settings  file
+    // sync() changes status() but thats only for writes. There's no "isValid" either..
+    // what a piece of shit...
+    QFile io(theme);
+    if (!io.open(QIODevice::ReadOnly))
+        return false;
+
+    settings_ = std::make_unique<QSettings>(theme, QSettings::IniFormat);
+    return true;
 }
 
 QVariant ThemeConfig::getValue(const QString& group, const QString& key) const

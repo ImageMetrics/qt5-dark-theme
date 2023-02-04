@@ -17,6 +17,7 @@
 
 #include "Kvantum.h"
 
+#include <QtGlobal>
 #include <QProcess>
 #include <QDir>
 #include <QPainter>
@@ -188,13 +189,20 @@ Style::~Style()
 
 void Style::setBuiltinDefaultTheme()
 {
-  defaultSettings_.reset(new ThemeConfig(":/Kvantum/default.kvconfig"));
+  defaultSettings_.reset(new ThemeConfig);
+  if (!defaultSettings_->load(":/Kvantum/default.kvconfig"))
+      qCritical("Failed to load kvantum default kvconfig.");
+
   defaultRndr_.reset(new QSvgRenderer());
-  defaultRndr_->load(QString(":/Kvantum/default.svg"));
+  if (!defaultRndr_->load(QString(":/Kvantum/default.svg")))
+      qCritical("Failed to load kvantum default SVG image.");
+
   settings_ = defaultSettings_.get();
   tspec_ = settings_->getThemeSpec();
   hspec_ = settings_->getHacksSpec();
   cspec_ = settings_->getColorSpec();
+
+  //qDebug("Loaded kvantum default theme.");
 
   probeTheme();
 }
@@ -221,30 +229,40 @@ bool Style::setTheme(const QString& kv, const QString& svg, const QString& color
   if (!kv.isEmpty()) {
     config.reset(new ThemeConfig);
     if (!config->load(kv))
-      return false;
+    {
+        qCritical("Failed to load kvantum theme config. [file='%s] ", qUtf8Printable(kv));
+        return false;
+    }
     config->setParent(defaultSettings_.get());
   }
 
   if (!svg.isEmpty()) {
     renderer.reset(new QSvgRenderer());
-    renderer->load(svg);
-    if (!renderer->isValid())
-      return false;
+    if (!renderer->load(svg))
+    {
+        qCritical("Failed to load kvantum theme SVG renderer. [file=%s]", qUtf8Printable(svg));
+        return false;
+    }
   }
 
   if (!color_config.isEmpty()) {
-    colors.reset(new PBSColorConfig());
+    colors.reset(new PBSColorConfig);
     if (!colors->load(color_config))
-      return false;
+    {
+        qCritical("Failed to load kvantum theme color config. [file=%s]", qUtf8Printable(color_config));
+        return false;
+    }
   }
 
-  themeRndr_ = std::move(renderer);
+  themeRndr_     = std::move(renderer);
   themeSettings_ = std::move(config);
-  colorConfig_ = std::move(colors);
+  colorConfig_   = std::move(colors);
   settings_ = themeSettings_.get();
   tspec_ = settings_->getThemeSpec();
   hspec_ = settings_->getHacksSpec();
   cspec_ = settings_->getColorSpec();
+
+  //qDebug("Loaded kvantum theme. [kv=%s, svg=%s, color=%s]", qUtf8Printable(kv), qUtf8Printable(svg), qUtf8Printable(color_config));
 
   probeTheme();
   return true;

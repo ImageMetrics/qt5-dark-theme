@@ -15,23 +15,22 @@
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef THEMECONFIG_H
-#define THEMECONFIG_H
+#pragma once
+
+#include <QSettings>
 
 #include "specs.h"
 
-class QSettings;
 
 namespace Kvantum {
 /*
    Class that loads theme settings.
  */
-class ThemeConfig {
+class ThemeConfig 
+{
   public:
-    ThemeConfig() ;
+    ThemeConfig() = default;
     ThemeConfig(const QString &theme);
-
-    ~ThemeConfig();
 
     /*
        Loads a configuration from the filename of the given theme.
@@ -89,8 +88,7 @@ class ThemeConfig {
      */
     QVariant getValue(const QString &group, const QString& key) const;
 
-    QSettings *settings_;
-    ThemeConfig *parentConfig_;
+    ThemeConfig* parentConfig_ = nullptr;
     /*
        Remember specifications instead of getting them again and again!
     */
@@ -100,8 +98,10 @@ class ThemeConfig {
     QHash<QString, label_spec> lSpecs_;
     QHash<QString, size_spec> sSpecs_;
 
-    bool isX11_;
-};
-}
+    std::unique_ptr<QSettings> settings_;
 
-#endif // THEMECONFIG_H
+    bool isX11_ = false;
+};
+
+}// namespace
+
