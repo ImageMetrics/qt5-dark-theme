@@ -62,7 +62,8 @@ add_library(Kvantum SHARED
     default/defaulttheme.qrc
     bin/themes/kvantum/DarkLines/DarkLines.qrc
     bin/themes/kvantum/KvCurves/KvCurves.qrc
-    bin/themes/kvantum/KvDarkRed/KvDarkRed.qrc)
+    bin/themes/kvantum/KvDarkRed/KvDarkRed.qrc
+    bin/themes/kvantum/kvGlowDark/kvGlowDark.qrc)
 
 target_link_libraries(Kvantum Qt5::Widgets Qt5::Core Qt5::Svg)
 target_include_directories(Kvantum PRIVATE "${CMAKE_CURRENT_LIST_DIR}/src")
