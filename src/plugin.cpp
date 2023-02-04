@@ -41,8 +41,9 @@ QStyle* KvantumStylePlugin::create(const QString& key)
     }
     else if (key == "glow-dark") {
         ret = style->setTheme(":kvGlowDark/kvGlowDark.kvconfig",
-                              ":kvGlowDark/kvGlowDark.svg", "");
-    }
+                              ":kvGlowDark/kvGlowDark.svg", 
+                              ":kvGlowDark/kvGlowDark.colors");
+    } 
     else if (key != "kvantum") return nullptr;
 
     if (!ret)
