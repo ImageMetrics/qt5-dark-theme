@@ -7,8 +7,33 @@
 #include "mainwindow.h"
 
 
-int main(int argc, char *argv[])
+bool SetKvantum()
 {
+    QStyle* kvantum = QApplication::setStyle("kvantum");
+    if (kvantum)
+    {
+        std::cout << "Set application style to 'kvantum with default theme.'";
+        std::cout << std::endl;
+        return true;
+    }
+
+    std::cout << "Failed to create kvantum style.\n";
+    std::cout << "Do you have styles/Kvantum.dll?\n";
+    std::cout << "It should have been built when this executable was built.\n";
+    std::cout << "If styles/Kvantum.dll exists when I have no idea. Sorry :(\n";
+    return false;
+}
+
+int main(int argc, char* argv[])
+{
+    bool has_style_arg = false;
+
+    for (int i = 1; i < argc; ++i)
+    {
+        if (!strcmp(argv[i], "-style"))
+            has_style_arg = true;
+    }
+
     QApplication a(argc, argv);
 
     // Kvantum style test application.
@@ -24,17 +49,12 @@ int main(int argc, char *argv[])
     // Qt also understands the -style command line parameter but here
     // we try to set the style programmatically.
 
-    QStyle* kvantum = QApplication::setStyle("kvantum");
-    if (kvantum == nullptr) {
-        std::cout << "Failed to create kvantum style.\n";
-        std::cout << "Do you have styles/Kvantum.dll?\n";
-        std::cout << "It should have been built when this executable was built.\n";
-        std::cout << "If styles/Kvantum.dll exists when I have no idea. Sorry :(\n";
-        return 1;
-    } else {
-        std::cout << "Set application style to 'kvantum with default theme.'";
-        std::cout << std::endl;
+    if (!has_style_arg)
+    {
+        if (!SetKvantum())
+            return 1;
     }
+
     MainWindow w;
     w.show();
     return a.exec();
