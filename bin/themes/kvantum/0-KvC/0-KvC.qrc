@@ -1,0 +1,6 @@
+<RCC>
+  <qresource prefix="0-KvC" >
+    <file>0-KvC.svg</file>
+    <file>0-KvC.kvconfig</file>
+  </qresource>
+</RCC>

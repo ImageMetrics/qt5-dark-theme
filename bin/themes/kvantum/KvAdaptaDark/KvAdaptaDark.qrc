@@ -1,0 +1,8 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/KvAdaptaDark">
+        <file>KvAdaptaDark.kvconfig</file>
+        <file>KvAdaptaDark.svg</file>
+        <file>KvAdaptaDark.colors</file>
+    </qresource>
+</RCC>

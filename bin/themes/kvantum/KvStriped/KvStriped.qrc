@@ -1,0 +1,8 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/KvStriped">
+        <file>KvStriped.kvconfig</file>
+        <file>KvStriped.svg</file>
+        <file>KvStriped.colors</file>
+    </qresource>
+</RCC>

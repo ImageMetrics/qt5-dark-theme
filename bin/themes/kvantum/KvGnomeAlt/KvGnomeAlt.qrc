@@ -1,0 +1,8 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/KvGnomeAlt">
+        <file>KvGnomeAlt.kvconfig</file>
+        <file>KvGnomeAlt.svg</file>
+        <file>KvGnomeAlt.colors</file>
+    </qresource>
+</RCC>

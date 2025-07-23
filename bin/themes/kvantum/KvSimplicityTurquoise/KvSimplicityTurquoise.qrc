@@ -1,0 +1,8 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/KvSimplicityTurquoise">
+        <file>KvSimplicityTurquoise.kvconfig</file>
+        <file>KvSimplicityTurquoise.svg</file>
+        <file>KvSimplicityTurquoise.colors</file>
+    </qresource>
+</RCC>

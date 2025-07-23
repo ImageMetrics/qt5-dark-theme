@@ -1,0 +1,7 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/Blossom">
+        <file>Blossom.kvconfig</file>
+        <file>Blossom.svg</file>
+    </qresource>
+</RCC>

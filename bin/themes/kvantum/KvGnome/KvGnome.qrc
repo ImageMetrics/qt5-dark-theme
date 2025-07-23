@@ -1,0 +1,8 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/KvGnome">
+        <file>KvGnome.kvconfig</file>
+        <file>KvGnome.svg</file>
+        <file>KvGnome.colors</file>
+    </qresource>
+</RCC>

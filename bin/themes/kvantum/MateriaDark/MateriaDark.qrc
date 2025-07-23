@@ -1,0 +1,7 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/MateriaDark">
+        <file>MateriaDark.kvconfig</file>
+        <file>MateriaDark.svg</file>
+    </qresource>
+</RCC>

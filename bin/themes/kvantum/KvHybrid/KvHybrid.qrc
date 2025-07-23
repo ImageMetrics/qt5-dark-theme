@@ -1,0 +1,8 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/KvHybrid">
+        <file>KvHybrid.kvconfig</file>
+        <file>KvHybrid.svg</file>
+        <file>KvHybrid.colors</file>
+    </qresource>
+</RCC>

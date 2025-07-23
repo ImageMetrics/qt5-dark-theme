@@ -1,0 +1,8 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/KvAmbiance">
+        <file>KvAmbiance.kvconfig</file>
+        <file>KvAmbiance.svg</file>
+        <file>KvAmbiance.colors</file>
+    </qresource>
+</RCC>

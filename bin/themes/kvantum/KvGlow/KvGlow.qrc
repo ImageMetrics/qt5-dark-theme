@@ -1,0 +1,7 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/KvGlow">
+        <file>KvGlow.kvconfig</file>
+        <file>KvGlow.svg</file>
+    </qresource>
+</RCC>

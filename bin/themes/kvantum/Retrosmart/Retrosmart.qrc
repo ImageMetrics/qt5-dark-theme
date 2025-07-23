@@ -1,0 +1,8 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/Retrosmart">
+        <file>Retrosmart.kvconfig</file>
+        <file>Retrosmart.svg</file>
+        <file>Retrosmart.colors</file>
+    </qresource>
+</RCC>

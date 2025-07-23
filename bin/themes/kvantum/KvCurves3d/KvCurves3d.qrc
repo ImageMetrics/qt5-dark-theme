@@ -1,0 +1,8 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/KvCurves3d">
+        <file>KvCurves3d.kvconfig</file>
+        <file>KvCurves3d.svg</file>
+        <file>KvCurves3d.colors</file>
+    </qresource>
+</RCC>

@@ -1,0 +1,8 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/KvSilver">
+        <file>KvSilver.kvconfig</file>
+        <file>KvSilver.svg</file>
+        <file>KvSilver.colors</file>
+    </qresource>
+</RCC>

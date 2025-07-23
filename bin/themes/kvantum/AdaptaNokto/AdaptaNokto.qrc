@@ -1,0 +1,6 @@
+<RCC>
+  <qresource prefix="AdaptaNokto" >
+    <file>AdaptaNokto.svg</file>
+    <file>AdaptaNokto.kvconfig</file>
+  </qresource>
+</RCC>

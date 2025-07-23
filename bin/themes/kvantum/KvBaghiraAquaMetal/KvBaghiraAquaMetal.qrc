@@ -1,0 +1,7 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/KvBaghiraAquaMetal">
+        <file>KvBaghiraAquaMetal.kvconfig</file>
+        <file>KvBaghiraAquaMetal.svg</file>
+    </qresource>
+</RCC>

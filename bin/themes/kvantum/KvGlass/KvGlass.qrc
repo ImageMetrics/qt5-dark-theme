@@ -1,0 +1,8 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/KvGlass">
+        <file>KvGlass.kvconfig</file>
+        <file>KvGlass.svg</file>
+        <file>KvGlass.colors</file>
+    </qresource>
+</RCC>

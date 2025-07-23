@@ -1,0 +1,7 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/KvCupertino">
+        <file>KvCupertino.kvconfig</file>
+        <file>KvCupertino.svg</file>
+    </qresource>
+</RCC>

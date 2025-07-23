@@ -1,0 +1,6 @@
+<RCC>
+  <qresource prefix="Adapta" >
+    <file>Adapta.svg</file>
+    <file>Adapta.kvconfig</file>
+  </qresource>
+</RCC>

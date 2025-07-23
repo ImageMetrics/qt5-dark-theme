@@ -1,0 +1,8 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/KvBeige">
+        <file>KvBeige.kvconfig</file>
+        <file>KvBeige.svg</file>
+        <file>KvBeige.colors</file>
+    </qresource>
+</RCC>

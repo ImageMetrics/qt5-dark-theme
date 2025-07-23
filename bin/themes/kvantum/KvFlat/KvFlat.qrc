@@ -1,0 +1,8 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/KvFlat">
+        <file>KvFlat.kvconfig</file>
+        <file>KvFlat.svg</file>
+        <file>KvFlat.colors</file>
+    </qresource>
+</RCC>

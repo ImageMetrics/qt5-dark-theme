@@ -1,0 +1,7 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/MateriaLight">
+        <file>MateriaLight.kvconfig</file>
+        <file>MateriaLight.svg</file>
+    </qresource>
+</RCC>

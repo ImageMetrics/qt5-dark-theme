@@ -1,0 +1,8 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/KvDynamo">
+        <file>KvDynamo.kvconfig</file>
+        <file>KvDynamo.svg</file>
+        <file>KvDynamo.colors</file>
+    </qresource>
+</RCC>

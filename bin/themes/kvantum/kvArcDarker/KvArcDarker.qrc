@@ -1,0 +1,8 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/KvArcDarker">
+        <file>kvArcDarker.kvconfig</file>
+        <file>kvArcDarker.svg</file>
+        <file>kvArcDarker.colors</file>
+    </qresource>
+</RCC>

@@ -1,7 +1,0 @@
-<RCC>
-  <qresource prefix="kvGlowDark" >
-    <file>kvGlowDark.svg</file>
-    <file>kvGlowDark.kvconfig</file>
-    <file>kvGlowDark.colors</file>
-  </qresource>
-</RCC>
