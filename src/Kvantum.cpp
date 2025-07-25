@@ -151,6 +151,15 @@ Style::Style(const QString& kv, const QString& svg, const QString& color_config)
 {
   progressTimer_ = new QTimer(this);
   connect(progressTimer_, &QTimer::timeout, this, &Style::advanceProgressbar);
+
+  // Default object initialization since it is expected to have these
+  defaultSettings_.reset(new ThemeConfig);
+  defaultRndr_.reset(new QSvgRenderer());
+  settings_ = defaultSettings_.get();
+  tspec_ = settings_->getThemeSpec();
+  hspec_ = settings_->getHacksSpec();
+  cspec_ = settings_->getColorSpec();
+
   loaded_ = setTheme(kv, svg, color_config);
 
   if (!loaded_)
