@@ -147,6 +147,18 @@ Style::Style() : QCommonStyle()
   setBuiltinDefaultTheme();
 }
 
+Style::Style(const QString& kv, const QString& svg, const QString& color_config) : QCommonStyle()
+{
+  progressTimer_ = new QTimer(this);
+  connect(progressTimer_, &QTimer::timeout, this, &Style::advanceProgressbar);
+  loaded_ = setTheme(kv, svg, color_config);
+
+  if (!loaded_)
+  {
+    setBuiltinDefaultTheme();
+  }
+}
+
 Style::~Style()
 {
 #if QT_VERSION >= 0x050500
@@ -265,6 +277,7 @@ bool Style::setTheme(const QString& kv, const QString& svg, const QString& color
   //qDebug("Loaded kvantum theme. [kv=%s, svg=%s, color=%s]", qUtf8Printable(kv), qUtf8Printable(svg), qUtf8Printable(color_config));
 
   probeTheme();
+  loaded_ = true;
   return true;
 }
 

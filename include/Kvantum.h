@@ -96,6 +96,7 @@ class Style : public QCommonStyle {
 
   public:
     Style();
+    Style(const QString& kv, const QString& svg, const QString& color_config);
     ~Style();
 
     void polish(QWidget *widget);
@@ -159,6 +160,8 @@ class Style : public QCommonStyle {
     virtual bool setTheme(const QString& kv, const QString& svg, const QString& colors);
     virtual void setTheme(const QString &baseThemeName, bool useDark)
     {}
+    
+    bool isLoaded() const { return loaded_; }
 
   protected:
     /* Set up a theme with the given name. If there is no name,
@@ -475,6 +478,9 @@ class Style : public QCommonStyle {
     bool hasInactiveSelItemCol_ = false;
     /* Does the toggled (active but unfocused) view-item have a high contrast with the pressed one? */
     bool toggledItemHasContrast_ = false;
+
+    // Has a Theme been succesfully loaded?
+    bool loaded_ = false;
 
 #if QT_VERSION >= 0x050500
     mutable QHash<const QObject*, Animation*> animations_; // For transient scrollbars
